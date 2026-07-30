@@ -1,0 +1,17 @@
+[project]
+name = "ticket-triage"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Evangelos Organtzoglou", email = "eorgantzoglou@uth.gr" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=3.0.5",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+]
