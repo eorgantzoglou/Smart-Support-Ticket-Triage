@@ -18,6 +18,9 @@ Flight delays, missed connections, or in-airport waiting caused by the airline's
 - *"And, of course, now that we're late despite our 20min early wheels down, our connections are at risk."*
 - *"Yes, we're trapped in Dublin til tomorrow after missed connection due to late BA arrival yesterday."*
 
+Includes compensation or refund requests that follow a delay the customer experienced.
+- *"what is your refund/discount policy when your flights are delayed 3+ hours bc of mechanical issues?"*
+
 ### `checkin_boarding_issue`
 Problems during check-in or boarding: denied boarding, gate confusion, being wrongly marked late.
 - *"And CATHY is telling me I'm late when A. I checked in Emary B. I came an hour before my flight."*
@@ -29,6 +32,7 @@ Cancelled flights and the rebooking or compensation that follows (vouchers, alte
 ### `lost_luggage`
 Lost, delayed, or damaged baggage and attempts to track or recover it.
 - *"my bags are lost and I have no way to start getting them rerouted without leaving security"*
+- *"i got the number, have rang 26 times, got no sleep last night because of the contents and my medication"* (a missing bag described by its contents — urgency `high` due to medication)
 
 ### `special_assistance`
 Requests about special needs: pets, dietary requirements, accessibility, traveling with children.
@@ -56,6 +60,7 @@ Not a customer seeking support: news/marketing accounts, jokes, trolling, free-s
 - *"Issues National Travel Advisory... #TravelTuesday #TuesNews"* (news bot)
 - *"hello can i get a free flight to london rn"*
 - *"i want someone to love me as much as you love delta"*
+- *"hello pls snd ur newletter subscription also any discount code in holidays"* (free-stuff begging)
 
 ### `other_unclear`
 A real customer, but the message alone carries no classifiable intent (context-less replies, ambiguous fragments).
@@ -69,6 +74,11 @@ The criterion is **time**: is travel currently in progress or imminent?
 - **`high`** — the customer is traveling now, stranded, or flying within hours. *"trapped in Dublin til tomorrow"*, *"my connections are at risk"*.
 - **`medium`** — an active issue needing resolution, but no immediate journey at stake. *"When can I buy the cat ticket?"*, *"my bags are lost"* (post-trip).
 - **`low`** — venting, questions, feedback with no time pressure. *"Guess we'll wait."*, praise, spam.
+- **Health & safety exception:** anything involving medication, medical needs,
+  or safety is `high`, regardless of travel timing.
+- Urgency measures **time pressure, not severity or anger**. A furious rant about
+  a finished trip is still `low`; a calm message from someone currently at the
+  airport is still `high`.
 
 ## Abusive (boolean)
 
@@ -76,10 +86,15 @@ The criterion is **time**: is travel currently in progress or imminent?
 
 - *"THIS IS BULLSHIT"* → `false` (profanity at the situation)
 - *"doesn't give two shits about people"* → `false` (anger at the company)
+- *"the cherry on top were the rude gate attendants, Austin and Monika"* → `false`
+  (criticizing named staff's behavior is a complaint; insults or threats at them are abuse)
 - Insulting a named employee, threats, slurs → `true`
 
 Abusive messages are escalated to a human regardless of intent.
 
 ## Provenance
 
-Labels are produced by a local Qwen LLM (~35B, via Ollama) using this document as the prompt's class definitions. A random sample of 250–300 tweets is human-verified to form the gold test set; labeler–human agreement is reported in the README.
+Labels are produced by DeepSeek V4 Flash via the DeepSeek API (thinking disabled,
+temperature 0, JSON mode), with this document injected verbatim as the class
+definitions in the system prompt. Every response is validated against a strict
+Pydantic schema; invalid responses are retried with increasing temperature. A random sample of 250–300 tweets is human-verified to form the gold test set; labeler–human agreement is reported in the README.
