@@ -14,26 +14,7 @@ labeling → human audit → LoRA fine-tuning → serving.
 
 ## Architecture
 
-```
-Kaggle: Customer Support on Twitter (3,002,524 messages)
-        │  filter to airlines, clean, dedupe
-        ▼
-tickets_clean.csv (6,000 customer messages)
-        │  DeepSeek V4 Flash API · JSON mode · temperature 0
-        │  Pydantic-validated, resumable batch labeling (total API cost < $1)
-        ▼
-tickets_labeled.csv (6,000/6,000 valid labels)
-        │                                └── 300-message gold set,
-        │                                    human-reviewed & adjudicated
-        ▼
-LoRA fine-tune of Qwen2.5-0.5B-Instruct (Colab T4)
-        │  evaluated on the gold set (never used in training)
-        ▼
-FastAPI  POST /triage  →  {"intent", "urgency", "abusive", "route_to", ...}
-        │  Docker image (CPU-only torch, model baked in at build)
-        ▼
-AWS ECS Fargate (Express Mode: ALB + HTTPS, eu-central-1)
-```
+![Architecture: LLM-labeled training pipeline distilled into a 0.5B model served on AWS ECS Fargate](docs/img/architecture.svg)
 
 ## Results
 
