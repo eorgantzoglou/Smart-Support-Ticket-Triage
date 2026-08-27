@@ -1,6 +1,3 @@
-<!-- DRAFT από τον mentor, 2026-08-26. Διάβασέ το, άλλαξε ό,τι δεν σε εκφράζει,
-     συμπλήρωσε τα [TODO], και σβήσε αυτό το σχόλιο πριν το repo γίνει public. -->
-
 # Smart Support Ticket Triage
 
 Classifies real airline customer-support messages by **intent** (10 classes),
@@ -69,7 +66,7 @@ lost luggage 0.80) — class imbalance in practice.
 - **0.5B, not bigger:** small enough to fine-tune on a free Colab T4 and serve on
   CPU; the comparison table above quantifies exactly what that size costs in accuracy.
 - **ECS Fargate, not App Runner:** the original deployment target (App Runner)
-  stopped accepting new customers in April 2026, mid-project. The deployment
+  stopped accepting new customers in April 2026. The deployment
   pivoted to AWS's recommended successor — ECS Express Mode (Fargate + ALB) —
   same container, different orchestrator; the image itself needed zero changes.
 
