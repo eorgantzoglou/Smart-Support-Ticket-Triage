@@ -30,6 +30,9 @@ LoRA fine-tune of Qwen2.5-0.5B-Instruct (Colab T4)
         │  evaluated on the gold set (never used in training)
         ▼
 FastAPI  POST /triage  →  {"intent", "urgency", "abusive", "route_to", ...}
+        │  Docker image (CPU-only torch, model baked in at build)
+        ▼
+AWS ECS Fargate (Express Mode: ALB + HTTPS, eu-central-1)
 ```
 
 ## Results
@@ -84,15 +87,35 @@ lost luggage 0.80) — class imbalance in practice.
   they exist only to measure, first the labeler, then the fine-tuned model.
 - **0.5B, not bigger:** small enough to fine-tune on a free Colab T4 and serve on
   CPU; the comparison table above quantifies exactly what that size costs in accuracy.
+- **ECS Fargate, not App Runner:** the original deployment target (App Runner)
+  stopped accepting new customers in April 2026, mid-project. The deployment
+  pivoted to AWS's recommended successor — ECS Express Mode (Fargate + ALB) —
+  same container, different orchestrator; the image itself needed zero changes.
 
-## Project status
+## Deployment
 
-Phases done: data & preprocessing, LLM labeling + human audit, LoRA fine-tuning &
-evaluation, FastAPI serving (model pulled from the HF Hub at startup, Pydantic
-request/response contracts, business routing with an abuse-escalation override,
-4/4 pytest). In progress: Docker image, AWS deployment.
-[TODO: όταν κλείσουν οι Φάσεις 5–6, αντικατέστησε αυτή την ενότητα με
-screenshots του /docs και του deployed API.]
+The whole service ships as a self-contained Docker image — CPU-only PyTorch and
+the merged model weights are baked in at build time (3.4 GB, 1.14 GB
+compressed), so the container needs no network access and no secrets to serve.
+It was pushed to a private ECR registry and deployed on **AWS ECS Fargate**
+(Express Mode: application load balancer, HTTPS, health checks on `/health`,
+2 vCPU / 4 GB, eu-central-1):
+
+![Swagger UI of the API live on AWS](docs/img/swagger-live.png)
+
+![/triage classifying a tweet from the public internet](docs/img/triage-response.png)
+
+The deployed API classified live requests correctly over the public internet
+(~4.4 s/request on 2 Fargate vCPUs). The service was then torn down to keep the
+footprint at zero — the ECR image redeploys in minutes when a live demo is
+needed.
+
+<details>
+<summary>AWS resources provisioned by the deployment</summary>
+
+![ECS Express Mode resources](docs/img/ecs-resources.png)
+
+</details>
 
 Known limitation, stated on purpose: the fine-tuned model cannot reliably detect
 the abuse flag — only 10 of 6,000 training examples were abusive. In production
@@ -114,6 +137,7 @@ src/api/model.py               inference: base model + LoRA adapters from the Hu
 src/api/app.py                 FastAPI service: /triage (validation, routing), /health
 tests/test_api.py              API test suite (happy path + input contract)
 docs/taxonomy.md               the label taxonomy — definitions, examples, rules
+Dockerfile                     self-contained serving image (CPU torch, model baked in)
 ```
 
 ## Running it
@@ -122,6 +146,13 @@ docs/taxonomy.md               the label taxonomy — definitions, examples, rul
 uv sync                                  # install dependencies
 uv run src/labeling/agreement.py         # reproduce the gold-set numbers
 uv run uvicorn src.api.app:app --reload  # serve the API locally → open /docs
+```
+
+Or fully containerized (downloads the model from the HF Hub during the build):
+
+```bash
+docker build -t ticket-triage .
+docker run -p 8000:8000 ticket-triage    # → http://localhost:8000/docs
 ```
 
 Labeling runs need a `DEEPSEEK_API_KEY` in `.env`. Data files are not committed;
